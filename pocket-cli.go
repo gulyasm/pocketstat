@@ -2,18 +2,28 @@ package main
 
 import (
 	"bytes"
-	"container/list"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"time"
+
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
 	redirect_uri = "https://getpocket.com/connected_accounts"
 	perm         = 0777
 )
+
+type PocketStat struct {
+	Id       bson.ObjectId            `bson:"_id"`
+	Articles []map[string]interface{} `bson:"articles"`
+	Count    int                      `bson:"count"`
+	Time     int64                    `bson:"timestamp"'`
+}
 
 type Article struct {
 	ItemId        string `json:"itemId"`
@@ -100,6 +110,14 @@ type Config struct {
 	Code, Token string
 }
 
+func insertIntoDb(articles []map[string]interface{}) error {
+	sess, err := mgo.Dial("localhost")
+	collection := sess.DB("pocket-stat").C("article-collections")
+	doc := PocketStat{Id: bson.NewObjectId(), Articles: articles, Count: len(articles), Time: time.Now().Unix()}
+	err = collection.Insert(doc)
+	return err
+}
+
 func main() {
 	config_path := "/home/gulyasm/.pocket-stat"
 	configfile, err := ioutil.ReadFile(config_path)
@@ -182,11 +200,11 @@ func main() {
 	var message map[string]interface{} = f.(map[string]interface{})
 	f = message["list"]
 	var articles map[string]interface{} = f.(map[string]interface{})
-	articles_list := list.List{}
+	var articles_list []map[string]interface{}
 	for _, v := range articles {
 		var article map[string]interface{} = v.(map[string]interface{})
-		articles_list.PushBack(article)
+		articles_list = append(articles_list, article)
 	}
-	fmt.Println(articles_list.Len())
+	insertIntoDb(articles_list)
 
 }
