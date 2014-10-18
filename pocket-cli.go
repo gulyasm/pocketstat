@@ -14,6 +14,28 @@ const (
 	redirect_uri = "https://getpocket.com/connected_accounts"
 )
 
+type Article struct {
+	ItemId        string `json:"itemId"`
+	ResolvedId    string `json:"resolvedId"`
+	GivenUrl      string `json:"given_url"`
+	GivenTitle    string `json:"given_title"`
+	Favorite      string `json:"favorite"`
+	Status        string `json:"status"`
+	TimeAdded     string `json:"time_added"`
+	TimeUpdated   string `json:"time_updated"`
+	TimeRead      string `json:"time_read"`
+	TimeFavorited string `json:"time_favorited"`
+	SortId        string `json:"sortId"`
+	ResolvedTitle string `json:"resolved_title"`
+	ResolvedUrl   string `json:"resolved_url"`
+	Excerpt       string `json:"excerpt"`
+	IsArticle     string `json:"is_article"`
+	IsIndex       string `json:"is_index"`
+	HasVideo      string `json:"has_video"`
+	HasImage      string `json:"has_image"`
+	WordCount     string `json:"word_count"`
+}
+
 func obtainCode() (string, error) {
 	client := &http.Client{}
 	data := "{\"consumer_key\": \"22838-50555f6efec6293dddbdc4ae\", \"redirect_uri\": \"gulyasm-personal-stat:authorizationFinished\"}"
@@ -155,6 +177,13 @@ func main() {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
+	var f interface{}
+	err = json.Unmarshal(body, &f)
+	var message map[string]interface{} = f.(map[string]interface{})
+	f = message["list"]
+	var articles map[string]interface{} = f.(map[string]interface{})
+	for _, v := range articles {
+		var article map[string]interface{} = v.(map[string]interface{})
+	}
 
 }
