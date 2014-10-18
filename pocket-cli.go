@@ -2,16 +2,17 @@ package main
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"os/exec"
 )
 
 const (
 	redirect_uri = "https://getpocket.com/connected_accounts"
+	perm         = 0777
 )
 
 type Article struct {
@@ -100,7 +101,7 @@ type Config struct {
 }
 
 func main() {
-	config_path := ".pocketstat"
+	config_path := "/home/gulyasm/.pocket-stat"
 	configfile, err := ioutil.ReadFile(config_path)
 	config := &Config{}
 	if err != nil {
@@ -108,7 +109,6 @@ func main() {
 	} else {
 		json.Unmarshal(configfile, config)
 	}
-	var perm os.FileMode = 0777
 	if config.Code == "" {
 		code, err := obtainCode()
 		if err != nil {
@@ -182,8 +182,11 @@ func main() {
 	var message map[string]interface{} = f.(map[string]interface{})
 	f = message["list"]
 	var articles map[string]interface{} = f.(map[string]interface{})
+	articles_list := list.List{}
 	for _, v := range articles {
 		var article map[string]interface{} = v.(map[string]interface{})
+		articles_list.PushBack(article)
 	}
+	fmt.Println(articles_list.Len())
 
 }
