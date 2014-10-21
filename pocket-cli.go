@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -119,8 +120,16 @@ func insertIntoDb(articles []map[string]interface{}) error {
 }
 
 func main() {
-	config_path := "/home/gulyasm/.pocket-stat"
-	configfile, err := ioutil.ReadFile(config_path)
+	var config_path = flag.String("config", "", "The path to the config file")
+	var format = flag.String("format", "csv", "The format specifier. Has to be one of the following: csv | db")
+	flag.Parse()
+
+	if *config_path == "" {
+		fmt.Println("config_path not given")
+		return
+	}
+
+	configfile, err := ioutil.ReadFile(*config_path)
 	config := &Config{}
 	if err != nil {
 		fmt.Println(err)
@@ -136,7 +145,7 @@ func main() {
 		access_token_url := fmt.Sprintf("https://getpocket.com/auth/authorize?request_token=%s&redirect_uri=%s", code, redirect_uri)
 		data, err := json.Marshal(config)
 		fmt.Println(string(data))
-		err = ioutil.WriteFile(config_path, data, perm)
+		err = ioutil.WriteFile(*config_path, data, perm)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -155,7 +164,7 @@ func main() {
 		}
 		config.Token = access_token
 		data, err := json.Marshal(config)
-		ioutil.WriteFile(config_path, data, perm)
+		ioutil.WriteFile(*config_path, data, perm)
 	}
 
 	type GetData struct {
@@ -205,6 +214,14 @@ func main() {
 		var article map[string]interface{} = v.(map[string]interface{})
 		articles_list = append(articles_list, article)
 	}
-	insertIntoDb(articles_list)
+
+	switch *format {
+	case "db":
+		insertIntoDb(articles_list)
+	case "console":
+		fmt.Println(len(articles_list))
+	case "csv":
+		fmt.Println("Not yet implemented")
+	}
 
 }
