@@ -42,8 +42,14 @@ func openUrl(url string) (err error) {
 
 func obtainCode() (string, error) {
 	client := &http.Client{}
-	data := "{\"consumer_key\": \"22838-50555f6efec6293dddbdc4ae\", \"redirect_uri\": \"gulyasm-personal-stat:authorizationFinished\"}"
-	buf := bytes.NewBufferString(data)
+	data, _ := json.Marshal(struct {
+		ConsumerKey string `json:"consumer_key"`
+		RedirectUri string `json:"redirect_uri"`
+	}{
+		ConsumerKey: "22838-50555f6efec6293dddbdc4ae",
+		RedirectUri: "gulyasm-personal-stat:authorizationFinished",
+	})
+	buf := bytes.NewBuffer(data)
 	req, err := http.NewRequest("POST", "https://getpocket.com/v3/oauth/request", buf)
 	if err != nil {
 		return "", err
@@ -74,9 +80,14 @@ type AccessTokenResponse struct {
 func obtainToken(code string) (string, error) {
 	client := &http.Client{}
 	url := "https://getpocket.com/v3/oauth/authorize"
-	data := "{\"consumer_key\": \"22838-50555f6efec6293dddbdc4ae\", \"code\":\"%s\"}"
-	data = fmt.Sprintf(data, code)
-	buf := bytes.NewBufferString(data)
+	data, _ := json.Marshal(struct {
+		ConsumerKey string `json:"consumer_key"`
+		Code        string `json:"code"`
+	}{
+		ConsumerKey: "22838-50555f6efec6293dddbdc4ae",
+		Code:        code,
+	})
+	buf := bytes.NewBuffer(data)
 	req, err := http.NewRequest("POST", url, buf)
 	if err != nil {
 		return "", err
