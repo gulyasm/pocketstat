@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -27,26 +28,16 @@ type PocketStat struct {
 	Time     int64                    `bson:"timestamp"'`
 }
 
-type Article struct {
-	ItemId        string `json:"itemId"`
-	ResolvedId    string `json:"resolvedId"`
-	GivenUrl      string `json:"given_url"`
-	GivenTitle    string `json:"given_title"`
-	Favorite      string `json:"favorite"`
-	Status        string `json:"status"`
-	TimeAdded     string `json:"time_added"`
-	TimeUpdated   string `json:"time_updated"`
-	TimeRead      string `json:"time_read"`
-	TimeFavorited string `json:"time_favorited"`
-	SortId        string `json:"sortId"`
-	ResolvedTitle string `json:"resolved_title"`
-	ResolvedUrl   string `json:"resolved_url"`
-	Excerpt       string `json:"excerpt"`
-	IsArticle     string `json:"is_article"`
-	IsIndex       string `json:"is_index"`
-	HasVideo      string `json:"has_video"`
-	HasImage      string `json:"has_image"`
-	WordCount     string `json:"word_count"`
+func openUrl(url string) (err error) {
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows", "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	return err
 }
 
 func obtainCode() (string, error) {
@@ -81,12 +72,10 @@ type AccessTokenResponse struct {
 }
 
 func obtainToken(code string) (string, error) {
-	fmt.Println("Requesting token...")
 	client := &http.Client{}
 	url := "https://getpocket.com/v3/oauth/authorize"
 	data := "{\"consumer_key\": \"22838-50555f6efec6293dddbdc4ae\", \"code\":\"%s\"}"
 	data = fmt.Sprintf(data, code)
-	fmt.Println(data)
 	buf := bytes.NewBufferString(data)
 	req, err := http.NewRequest("POST", url, buf)
 	if err != nil {
@@ -95,14 +84,12 @@ func obtainToken(code string) (string, error) {
 	req.Header.Add("X-Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
 	resp, err := client.Do(req)
-	fmt.Println(resp.Status)
 	if err != nil || resp.StatusCode != 200 {
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
 	atr := &AccessTokenResponse{}
 	json.Unmarshal(body, atr)
 	return atr.AccessToken, nil
@@ -146,12 +133,12 @@ func main() {
 		config.Code = code
 		access_token_url := fmt.Sprintf("https://getpocket.com/auth/authorize?request_token=%s&redirect_uri=%s", code, redirect_uri)
 		data, err := json.Marshal(config)
-		fmt.Println(string(data))
 		err = ioutil.WriteFile(*config_path, data, perm)
 		if err != nil {
 			fmt.Println(err)
 		}
-		err = exec.Command("xdg-open", access_token_url).Start()
+		openUrl(access_token_url)
+		fmt.Printf("Please authorize pocket-stat application in your browser. If the authorization page did not open, please open the following url in your browser: %s\n", access_token_url)
 		return
 	}
 	access_token := config.Token
