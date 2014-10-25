@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -122,6 +123,7 @@ func insertIntoDb(articles []map[string]interface{}) error {
 func main() {
 	var config_path = flag.String("config", "", "The path to the config file")
 	var format = flag.String("format", "csv", "The format specifier. Has to be one of the following: csv | db")
+	var v = flag.String("v", "elements", "The verbosity level. One of the following: elements | count")
 	flag.Parse()
 
 	if *config_path == "" {
@@ -221,7 +223,17 @@ func main() {
 	case "console":
 		fmt.Println(len(articles_list))
 	case "csv":
-		fmt.Println("Not yet implemented")
+		switch *v {
+		case "count":
+			fmt.Printf("%d;%d\n", time.Now().Unix(), len(articles_list))
+		case "elements":
+			for _, a := range articles_list {
+				fmt.Printf("%d;%s;%s;%s\n",
+					time.Now().Unix(),
+					a["time_added"],
+					strconv.Quote(a["resolved_title"].(string)),
+					a["word_count"])
+			}
+		}
 	}
-
 }
